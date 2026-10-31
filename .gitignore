@@ -1,0 +1,32 @@
+# Raw data — never committed (re-downloaded from Kaggle)
+data/raw/
+!data/raw/.gitkeep
+
+# DuckDB warehouse files
+*.duckdb
+*.duckdb.wal
+
+# dbt
+olist_dbt/target/
+olist_dbt/dbt_packages/
+olist_dbt/logs/
+logs/
+
+# Secrets / local config
+.env
+profiles.yml
+~/.dbt/
+
+# Python virtual environments
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

@@ -1,0 +1,6 @@
+packages:
+  # dbt_utils: cross-database helpers (generate_series for the date spine,
+  # surrogate_key alternatives, test helpers). 1.3.0 works across the dbt 1.x
+  # line (installed dbt-core is 1.12.6).
+  - package: dbt-labs/dbt_utils
+    version: "1.3.0"

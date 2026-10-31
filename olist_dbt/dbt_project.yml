@@ -1,0 +1,43 @@
+name: "olist_dbt"
+version: "1.0.0"
+config-version: 2
+
+# Profile is defined in ~/.dbt/profiles.yml (copy from profiles.yml.example).
+profile: "olist"
+
+model-paths: ["models"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+# Schemas for the two layers. On DuckDB these become schema prefixes; on
+# Snowflake they map to OLIST.RAW / OLIST.ANALYTICS (see profiles + env).
+vars:
+  raw_schema: "raw"
+  analytics_schema: "analytics"
+  # Date spine bounds for dim_date (macro-driven); overridable at runtime.
+  date_spine_start: "2016-01-01"
+  date_spine_end: "2019-01-01"
+
+models:
+  olist_dbt:
+    staging:
+      +materialized: view
+      +schema: "staging"
+    integration:
+      # Insert-only Data Vault layer: incremental so history accumulates.
+      +materialized: incremental
+      +on_schema_change: "append_new_columns"
+      +schema: "integration"
+    marts:
+      +materialized: table
+      +schema: "marts"
+
+seeds:
+  olist_dbt:
+    +schema: "seeds"

@@ -1,0 +1,26 @@
+# Example dbt profile. Copy to ~/.dbt/profiles.yml and adjust.
+# Never commit the real profiles.yml (it is git-ignored). Values are read from
+# environment variables (see .env.example); load them before running dbt.
+
+olist:
+  target: duckdb
+  outputs:
+
+    duckdb:
+      type: duckdb
+      # Path to the local DuckDB file. Defaults to the project-root warehouse
+      # file; override with the DUCKDB_PATH env var.
+      path: "{{ env_var('DUCKDB_PATH', 'olist_warehouse.duckdb') }}"
+      schema: main
+      threads: 4
+
+    snowflake:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      role: "{{ env_var('SNOWFLAKE_ROLE', 'ACCOUNTADMIN') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'COMPUTE_WH') }}"
+      database: "{{ env_var('SNOWFLAKE_DATABASE', 'OLIST') }}"
+      schema: "{{ env_var('SNOWFLAKE_ANALYTICS_SCHEMA', 'ANALYTICS') }}"
+      threads: 4

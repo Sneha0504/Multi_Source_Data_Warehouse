@@ -1,0 +1,34 @@
+# Central configuration for the Multi-Source Data Warehouse.
+# No hard-coded absolute paths or credentials live here. Credentials come from
+# .env (see .env.example). Paths are relative to the project root.
+
+paths:
+  data_raw_dir: "data/raw"          # untouched Kaggle CSVs land here (git-ignored)
+  duckdb_path: "olist_warehouse.duckdb"   # local DuckDB warehouse file (git-ignored)
+
+# Which warehouse the ingestion script targets. dbt selects its target
+# separately via --target (duckdb | snowflake). Can be overridden by the
+# WAREHOUSE_TARGET env var.
+target: "duckdb"                    # duckdb | snowflake
+
+# Two simulated production loads (see PROJECT.md Step 5).
+batches:
+  batch1:
+    # AS-OF snapshot: only data on/before the cutoff is visible; later
+    # timestamps are blanked and order_status is derived as of this date.
+    cutoff: "2018-01-01"
+    loaded_at: "2018-01-01 06:00:00"
+  batch2:
+    # Full load: everything, with changed orders arriving as new versions.
+    cutoff: null
+    loaded_at: "2018-10-18 06:00:00"
+
+thresholds:
+  # A payment reconciliation difference larger than this (in BRL/USD units) is
+  # flagged as a warning in the data quality checks.
+  payment_reconciliation_tolerance_usd: 1.0
+
+# Source datasets (used by scripts/download_data.py and docs/data_sources.md).
+kaggle_datasets:
+  ecommerce: "olistbr/brazilian-ecommerce"
+  marketing_funnel: "olistbr/marketing-funnel-olist"
