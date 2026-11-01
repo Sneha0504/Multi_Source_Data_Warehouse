@@ -1,0 +1,31 @@
+version: 2
+
+# Raw layer loaded by scripts/load_raw.py. Every table stores its source
+# columns as VARCHAR plus load metadata (_source_system, _source_file,
+# _loaded_at, _row_hash) and keeps EVERY landed version of each row.
+# Staging models read these via {{ source('raw', '<table>') }}.
+sources:
+  - name: raw
+    description: "Raw landing zone. One table per source file; all columns VARCHAR; every row version retained."
+    schema: raw
+    tables:
+      - name: customers
+        description: "Olist customer records (one customer_id per order; customer_unique_id groups a person across orders)."
+      - name: orders
+        description: "Orders as a CDC-style feed: multiple versions per order_id across batches."
+      - name: order_items
+        description: "Order line items. Grain: (order_id, order_item_id)."
+      - name: order_payments
+        description: "Payment records per order. Grain: (order_id, payment_sequential)."
+      - name: order_reviews
+        description: "Customer reviews. May contain duplicate (review_id, order_id) versions."
+      - name: products
+        description: "Product catalog with category name (Portuguese) and physical attributes."
+      - name: sellers
+        description: "Seller records."
+      - name: product_category_name_translation
+        description: "Lookup from Portuguese product_category_name to English."
+      - name: marketing_qualified_leads
+        description: "Marketing qualified leads (funnel entry)."
+      - name: closed_deals
+        description: "Closed deals: leads that converted into sellers."
