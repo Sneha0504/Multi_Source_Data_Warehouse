@@ -1,0 +1,6 @@
+reconciliation_status,order_count,pct_of_orders
+match,98416,98.9692
+no_items,775,0.7794
+overpaid,232,0.2333
+underpaid,17,0.0171
+no_payment,1,0.001

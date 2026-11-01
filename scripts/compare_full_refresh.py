@@ -153,6 +153,13 @@ def run_full_refresh(copy_path: Path, target_path: Path) -> None:
     env = os.environ.copy()
     env["DUCKDB_PATH"] = str(copy_path)
     env["DBT_TARGET_PATH"] = str(target_path)
+    # Make sure dbt finds the 'olist' profile without any manual ~/.dbt setup.
+    # The Makefile exports DBT_PROFILES_DIR, but when this script is run directly
+    # fall back to the local profile at olist_dbt/profiles.yml (same dir dbt runs
+    # from). This only changes where the profile is read from; the comparison is
+    # unaffected.
+    if "DBT_PROFILES_DIR" not in env:
+        env["DBT_PROFILES_DIR"] = str(DBT_PROJECT_DIR)
     # dbt's experimental parser may fetch over TLS; make sure a CA bundle is set
     # on framework Python even when the caller did not export one.
     if "SSL_CERT_FILE" not in env:
