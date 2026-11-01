@@ -157,7 +157,7 @@ def download_datasets(slugs: dict[str, str], raw_dir: Path) -> bool:
     """
     try:
         from kaggle.api.kaggle_api_extended import KaggleApi
-    except Exception as exc:  # pragma: no cover - depends on environment
+    except ImportError as exc:  # pragma: no cover - depends on environment
         logger.warning("Could not import the kaggle package: %s", exc)
         return False
 
@@ -169,7 +169,7 @@ def download_datasets(slugs: dict[str, str], raw_dir: Path) -> bool:
     except SystemExit:
         logger.warning("Kaggle authentication failed: no valid token found.")
         return False
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001  # third-party client raises varied errors
         logger.warning("Kaggle authentication failed: %s", exc)
         return False
 
@@ -178,7 +178,7 @@ def download_datasets(slugs: dict[str, str], raw_dir: Path) -> bool:
         logger.info("Downloading dataset '%s' (%s) into %s", name, slug, raw_dir)
         try:
             api.dataset_download_files(slug, path=str(raw_dir), unzip=True, quiet=False)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001  # third-party client raises varied errors
             logger.warning("Failed to download '%s' (%s): %s", name, slug, exc)
             return False
     logger.info("Kaggle download complete.")

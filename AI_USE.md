@@ -45,6 +45,29 @@ with it, and no number appears in README/memo unless it came from query output.
      to its bundle for the install; the reinstall succeeded. This fix is baked into
      the Makefile `setup` target so `make setup` works on the same environment.
 
+## Deliberate deviations from the spec
+
+- **Batch-1 as-of masking does NOT blank `order_estimated_delivery_date`.** The
+  spec's literal wording says to blank "any order timestamp" on/after the cutoff.
+  The estimated delivery date is not an event timestamp — it is the delivery
+  promise known at purchase time — so in a true as-of snapshot it was already
+  known at the cutoff. Masking it produced ~2,499 spurious "delivered -> delivered"
+  order versions whose only difference was a blanked-then-restored estimate.
+  `scripts/load_raw.py` therefore masks only the three real event timestamps
+  (approved_at, delivered_carrier_date, delivered_customer_date) and leaves the
+  estimate intact.
+- **Batch-1 status is re-derived only for orders that actually had a timestamp
+  masked**, and terminal statuses ('canceled'/'unavailable') are always kept.
+  - *Bug caught (by the M3 verification pass):* the first version re-derived
+    `order_status` for every kept order, rewriting ~905 pre-cutoff orders that had
+    no masked timestamp (e.g. processing->unavailable, processing->invoiced,
+    delivered->canceled). That injected ~905 bogus status changes into raw history
+    and would have corrupted `sat_order_status` and Key Question #4.
+  - *Handling:* a per-row `masked` flag (OR of the event timestamps that fell
+    on/after the cutoff) now gates the re-derivation; unmasked orders keep their
+    true source status, and canceled/unavailable orders keep their terminal status
+    even when masked (cancellation time is unknown, so no rollback is invented).
+
 ## Not yet run / not yet verified
 
 - No raw data downloaded yet (manual Kaggle download chosen). Therefore: no
