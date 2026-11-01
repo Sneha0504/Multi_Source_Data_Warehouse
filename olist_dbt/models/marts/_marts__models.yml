@@ -1,0 +1,148 @@
+version: 2
+
+# Marts-layer tests (Step 7).
+#   * Dimensions: unique + not_null on the hash key and (where it is the grain)
+#     the natural business key.
+#   * Facts: unique + not_null on the grain hash key; relationships from the fact
+#     foreign keys back to the conforming dimensions / hub.
+#   * accepted_values: order_status and reconciliation_status on fct_orders.
+
+models:
+  # --------------------------------------------------------- dimensions ----
+  - name: dim_customer
+    description: "Dimension: one row per person (customer_unique_id)."
+    columns:
+      - name: customer_hk
+        tests:
+          - unique
+          - not_null
+      - name: customer_unique_id
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_product
+    description: "Dimension: one row per product_id."
+    columns:
+      - name: product_hk
+        tests:
+          - unique
+          - not_null
+      - name: product_id
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_seller
+    description: "Dimension: one row per seller_id (ecommerce + crm sellers)."
+    columns:
+      - name: seller_hk
+        tests:
+          - unique
+          - not_null
+      - name: seller_id
+        tests:
+          - unique
+          - not_null
+      - name: record_source
+        tests:
+          - accepted_values:
+              values: ["ecommerce", "crm"]
+
+  - name: dim_date
+    description: "Date spine. Grain: one row per calendar day."
+    columns:
+      - name: date_day
+        tests:
+          - unique
+          - not_null
+
+  # -------------------------------------------------------------- facts ----
+  - name: fct_orders
+    description: "Fact: one row per order_id."
+    columns:
+      - name: order_hk
+        tests:
+          - unique
+          - not_null
+      - name: order_id
+        tests:
+          - unique
+          - not_null
+      - name: customer_unique_id
+        description: "The person behind the order (FK to dim_customer)."
+        tests:
+          - relationships:
+              to: ref('dim_customer')
+              field: customer_unique_id
+      - name: order_purchase_month
+        description: "First day of the purchase month (FK to the date dimension)."
+        tests:
+          - relationships:
+              to: ref('dim_date')
+              field: month_start
+      - name: order_status
+        tests:
+          - accepted_values:
+              values:
+                - delivered
+                - shipped
+                - canceled
+                - unavailable
+                - invoiced
+                - processing
+                - created
+                - approved
+      - name: reconciliation_status
+        tests:
+          - accepted_values:
+              values:
+                - match
+                - overpaid
+                - underpaid
+                - no_items
+                - no_payment
+
+  - name: fct_order_items
+    description: "Fact: one row per order line (order_id, order_item_id)."
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - order_id
+            - order_item_id
+    columns:
+      - name: order_hk
+        tests:
+          - not_null
+          - relationships:
+              to: ref('hub_order')
+              field: order_hk
+      - name: product_hk
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_product')
+              field: product_hk
+      - name: seller_hk
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_seller')
+              field: seller_hk
+
+  # ------------------------------------------------------- aggregate marts --
+  - name: mart_monthly_kpis
+    description: "Monthly KPI roll-up. Grain: one row per purchase month."
+    columns:
+      - name: month_start
+        tests:
+          - unique
+          - not_null
+
+  - name: mart_seller_acquisition
+    description: "Seller acquisition funnel by lead origin."
+    columns:
+      - name: origin
+        tests:
+          - unique
+          - not_null

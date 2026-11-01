@@ -1,0 +1,211 @@
+version: 2
+
+# Integration-layer (Data Vault) tests.
+#
+# Conventions enforced here (Step 7):
+#   * Hubs  : unique + not_null on the entity hash key (<entity>_hk).
+#   * Links : unique + not_null on the link hash key (<link>_hk); every foreign
+#             hash key (FK) is not_null and has a relationships test to its hub.
+#   * Sats  : not_null on the entity hash key; the (entity_hk, load_ts) pair is
+#             unique (dbt_utils.unique_combination_of_columns); the entity hash
+#             key has a relationships test to its hub.
+#   * record_source is constrained to the two source systems everywhere it exists.
+
+models:
+  # ---------------------------------------------------------------- hubs ----
+  - name: hub_customer
+    description: "Hub: one row per customer_unique_id (the person)."
+    columns:
+      - name: customer_hk
+        tests:
+          - unique
+          - not_null
+      - name: record_source
+        tests:
+          - accepted_values:
+              values: ["ecommerce", "crm"]
+
+  - name: hub_order
+    description: "Hub: one row per order_id."
+    columns:
+      - name: order_hk
+        tests:
+          - unique
+          - not_null
+      - name: record_source
+        tests:
+          - accepted_values:
+              values: ["ecommerce", "crm"]
+
+  - name: hub_product
+    description: "Hub: one row per product_id."
+    columns:
+      - name: product_hk
+        tests:
+          - unique
+          - not_null
+      - name: record_source
+        tests:
+          - accepted_values:
+              values: ["ecommerce", "crm"]
+
+  - name: hub_seller
+    description: "Hub: one row per seller_id (fed by both ecommerce and crm)."
+    columns:
+      - name: seller_hk
+        tests:
+          - unique
+          - not_null
+      - name: record_source
+        tests:
+          - accepted_values:
+              values: ["ecommerce", "crm"]
+
+  - name: hub_lead
+    description: "Hub: one row per mql_id (marketing qualified lead)."
+    columns:
+      - name: lead_hk
+        tests:
+          - unique
+          - not_null
+      - name: record_source
+        tests:
+          - accepted_values:
+              values: ["ecommerce", "crm"]
+
+  # --------------------------------------------------------------- links ----
+  - name: link_order_customer
+    description: "Link: order <-> customer (person). Grain: one row per order."
+    columns:
+      - name: link_order_customer_hk
+        tests:
+          - unique
+          - not_null
+      - name: order_hk
+        tests:
+          - not_null
+          - relationships:
+              to: ref('hub_order')
+              field: order_hk
+      - name: customer_hk
+        tests:
+          - not_null
+          - relationships:
+              to: ref('hub_customer')
+              field: customer_hk
+      - name: record_source
+        tests:
+          - accepted_values:
+              values: ["ecommerce", "crm"]
+
+  - name: link_order_item
+    description: "Link: order line. Grain: (order_id, order_item_id)."
+    columns:
+      - name: link_order_item_hk
+        tests:
+          - unique
+          - not_null
+      - name: order_hk
+        tests:
+          - not_null
+          - relationships:
+              to: ref('hub_order')
+              field: order_hk
+      - name: product_hk
+        tests:
+          - not_null
+          - relationships:
+              to: ref('hub_product')
+              field: product_hk
+      - name: seller_hk
+        tests:
+          - not_null
+          - relationships:
+              to: ref('hub_seller')
+              field: seller_hk
+      - name: record_source
+        tests:
+          - accepted_values:
+              values: ["ecommerce", "crm"]
+
+  - name: link_lead_seller
+    description: "Link: lead <-> seller (cross-system). Grain: (mql_id, seller_id)."
+    columns:
+      - name: link_lead_seller_hk
+        tests:
+          - unique
+          - not_null
+      - name: lead_hk
+        tests:
+          - not_null
+          - relationships:
+              to: ref('hub_lead')
+              field: lead_hk
+      - name: seller_hk
+        tests:
+          - not_null
+          - relationships:
+              to: ref('hub_seller')
+              field: seller_hk
+      - name: record_source
+        tests:
+          - accepted_values:
+              values: ["ecommerce", "crm"]
+
+  # ---------------------------------------------------------- satellites ----
+  - name: sat_order_status
+    description: "Satellite: order status change history (hangs off hub_order)."
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - order_hk
+            - load_ts
+    columns:
+      - name: order_hk
+        tests:
+          - not_null
+          - relationships:
+              to: ref('hub_order')
+              field: order_hk
+      - name: record_source
+        tests:
+          - accepted_values:
+              values: ["ecommerce", "crm"]
+
+  - name: sat_lead_details
+    description: "Satellite: lead details change history (hangs off hub_lead)."
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - lead_hk
+            - load_ts
+    columns:
+      - name: lead_hk
+        tests:
+          - not_null
+          - relationships:
+              to: ref('hub_lead')
+              field: lead_hk
+      - name: record_source
+        tests:
+          - accepted_values:
+              values: ["ecommerce", "crm"]
+
+  - name: sat_deal_details
+    description: "Satellite: closed-deal details change history (hangs off hub_lead)."
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - lead_hk
+            - load_ts
+    columns:
+      - name: lead_hk
+        tests:
+          - not_null
+          - relationships:
+              to: ref('hub_lead')
+              field: lead_hk
+      - name: record_source
+        tests:
+          - accepted_values:
+              values: ["ecommerce", "crm"]

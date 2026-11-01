@@ -1,0 +1,77 @@
+version: 2
+
+# Staging-layer tests. Staging models are views over the raw landing zone that
+# rename, cast and standardize. The checks here are the "basic keys" required by
+# Step 7: the order grain is one row per order_id, and every source business key
+# that downstream hubs/links depend on is present (not null).
+
+models:
+  - name: stg_orders
+    description: "Orders, latest landed version per order_id (one row per order)."
+    columns:
+      - name: order_id
+        description: "Business key of the order. Unique at this grain."
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_orders_history
+    description: "Every landed version of every order (feeds sat_order_status)."
+    columns:
+      - name: order_id
+        description: "Business key of the order (repeats across versions)."
+        tests:
+          - not_null
+
+  - name: stg_customers
+    description: "Customer records (per-order customer_id; person = customer_unique_id)."
+    columns:
+      - name: customer_id
+        tests:
+          - not_null
+      - name: customer_unique_id
+        description: "Business key of the person behind the orders."
+        tests:
+          - not_null
+
+  - name: stg_products
+    description: "Product catalog with English category + translation status."
+    columns:
+      - name: product_id
+        tests:
+          - not_null
+
+  - name: stg_sellers
+    description: "Ecommerce seller catalog."
+    columns:
+      - name: seller_id
+        tests:
+          - not_null
+
+  - name: stg_order_items
+    description: "Order lines. Grain: (order_id, order_item_id)."
+    columns:
+      - name: order_id
+        tests:
+          - not_null
+      - name: order_item_id
+        tests:
+          - not_null
+
+  - name: stg_marketing_qualified_leads
+    description: "Marketing qualified leads (funnel entry)."
+    columns:
+      - name: mql_id
+        description: "Business key of the lead."
+        tests:
+          - not_null
+
+  - name: stg_closed_deals
+    description: "Closed deals: leads that converted into sellers."
+    columns:
+      - name: mql_id
+        tests:
+          - not_null
+      - name: seller_id
+        tests:
+          - not_null
