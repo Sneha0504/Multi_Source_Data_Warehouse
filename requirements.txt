@@ -99,3 +99,16 @@ urllib3==2.8.0
 webencodings==0.6.1
 wheel==0.48.0
 zipp==4.1.2
+
+# Dashboard / visualization (scripts/build_charts.py + scripts/build_dashboard_html.py).
+# matplotlib renders the static PNGs; plotly builds the self-contained HTML dashboard.
+# Transitive deps are pinned too so the viz install is reproducible.
+matplotlib==3.11.2
+plotly==7.1.0
+contourpy==1.4.0
+cycler==0.12.1
+fonttools==4.68.0
+kiwisolver==1.5.1
+narwhals==2.28.0
+pillow==13.0.0
+pyparsing==3.3.3

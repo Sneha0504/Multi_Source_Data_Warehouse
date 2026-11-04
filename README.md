@@ -58,8 +58,10 @@ Multi_Source_Data_Warehouse/
 │   ├── tests/                   # singular data tests
 │   ├── profiles.yml.example     # `make setup` copies this to olist_dbt/profiles.yml (git-ignored)
 │   └── target/                  # dbt artifacts incl. manifest.json / catalog.json (git-ignored)
-├── outputs/dashboard/           # CSV extracts for Tableau / Power BI
-├── scripts/                     # download_data.py, load_raw.py, compare_full_refresh.py, export_dashboard.py
+├── outputs/dashboard/           # CSV extracts for Tableau / Power BI + dashboard.html
+├── outputs/charts/              # matplotlib PNGs (see "Dashboard (Python)")
+├── scripts/                     # download_data.py, load_raw.py, compare_full_refresh.py,
+│                                #   export_dashboard.py, build_charts.py, build_dashboard_html.py
 ├── tests/                       # pytest for load_raw.py
 ├── Makefile                     # setup / download / load / build / rebuild-check / test / docs / all
 ├── requirements.txt             # pinned deps
@@ -117,6 +119,52 @@ export SSL_CERT_FILE="$(.venv/bin/python -m certifi)"
 # point dbt at it when running outside make:
 export DBT_PROFILES_DIR="$PWD/olist_dbt"
 ```
+
+## Dashboard (Python)
+
+Two Python renderers turn the reporting marts into a dashboard with no BI tool
+required. Both open the warehouse **read-only** and mirror the three pages of
+`docs/dashboard_guide.md`.
+
+- **Static PNGs** — `scripts/build_charts.py` (matplotlib) → `outputs/charts/`.
+- **Interactive HTML** — `scripts/build_dashboard_html.py` (Plotly) →
+  `outputs/dashboard/dashboard.html`: a single **self-contained** file with
+  plotly.js inlined, so it works offline (hover for values, drag to zoom).
+  GitHub will not render it inline — download it and open it in a browser.
+
+```bash
+.venv/bin/python scripts/build_charts.py          # PNGs  -> outputs/charts/
+.venv/bin/python scripts/build_dashboard_html.py  # HTML  -> outputs/dashboard/dashboard.html
+# or build both at once:
+make charts
+```
+
+### Page 1 — Executive KPIs
+
+The KPI "Gross order value (GMV)" is the sum of `total_item_value` (items +
+freight) across **all** 99,441 orders — not the marketing-attributed gross on
+page 2. The monthly trend runs from 2017-01; the partial boundary months and the
+sparse 2016 ramp-up are shown de-emphasized but excluded from the trend line.
+
+![Executive KPI summary (orders, people, repeat rate, GMV, AOV)](outputs/charts/exec_kpi_summary.png)
+![Monthly orders over time (trend from 2017-01; 2016 ramp-up de-emphasized)](outputs/charts/exec_monthly_orders.png)
+![Monthly gross revenue over time (trend from 2017-01)](outputs/charts/exec_monthly_revenue.png)
+
+### Page 2 — Marketing funnel by channel
+
+"Gross sales by channel" below is the **marketing-attributed** subset only: the
+380 marketing-acquired sellers that actually sold (R$775.8K ≈ 5% of total GMV),
+not marketplace-wide revenue.
+
+![Leads, deals and sellers with sales by channel](outputs/charts/funnel_leads_deals_sellers.png)
+![Lead-to-deal conversion rate by channel](outputs/charts/funnel_conversion_rate.png)
+![Gross sales of marketing-acquired sellers by channel (380 sellers; R$775.8K ≈ 5% of GMV)](outputs/charts/funnel_gross_sales.png)
+
+### Page 3 — Data quality & reconciliation
+
+![Orders by reconciliation status](outputs/charts/dq_reconciliation_status.png)
+![Average review score, late vs on-time](outputs/charts/dq_review_late_vs_ontime.png)
+![Key data-quality issue counts](outputs/charts/dq_issue_counts.png)
 
 ## Key findings (all from the built warehouse)
 

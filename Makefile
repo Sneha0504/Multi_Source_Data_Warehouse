@@ -19,7 +19,7 @@ export DUCKDB_PATH := $(CURDIR)/olist_warehouse.duckdb
 # ~/.dbt/profiles.yml. (The README's Snowflake section still uses ~/.dbt.)
 export DBT_PROFILES_DIR := $(CURDIR)/olist_dbt
 
-.PHONY: setup download load-batch1 build load-batch2 rebuild-check test docs dashboard all clean
+.PHONY: setup download load-batch1 build load-batch2 rebuild-check test docs dashboard charts all clean
 
 # Create the venv and install deps. Installs certifi first and points
 # SSL_CERT_FILE at it so build-time downloads (dbt's experimental parser) verify
@@ -60,6 +60,12 @@ docs:
 # NOT part of `all` (run it after `make all`).
 dashboard:
 	$(PY) scripts/export_dashboard.py
+
+# Convenience: render the Python dashboard (matplotlib PNGs + the self-contained
+# interactive Plotly HTML) from the built warehouse. NOT part of `all`.
+charts:
+	$(PY) scripts/build_charts.py
+	$(PY) scripts/build_dashboard_html.py
 
 # Full end-to-end run on DuckDB.
 #
